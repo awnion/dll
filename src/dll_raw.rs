@@ -1,7 +1,5 @@
-use std::fmt::Debug;
 use std::{mem, ptr};
 use std::marker::PhantomData;
-use std::ptr::NonNull;
 
 pub struct Node<T> {
     next: NodePtr<T>,
@@ -78,7 +76,7 @@ mod tests {
     #[test]
     fn it_works() {
         let mut dll = DLL::new();
-        for n in 0..10000 {
+        for n in 0..20_000 {
             for i in 0..n {
                 dll.push(i);
             }

@@ -1,19 +1,18 @@
-use std::fmt::Debug;
 use std::ptr::NonNull;
 
-pub struct Node<T: Copy + Debug> {
+pub struct Node<T> {
     next: Option<NonNull<Node<T>>>,
     prev: Option<NonNull<Node<T>>>,
     value: T,
 }
 
-pub struct DLL<T: Copy + Debug> {
+pub struct DLL<T> {
     len: usize,
     head: Option<NonNull<Node<T>>>,
     tail: Option<NonNull<Node<T>>>,
 }
 
-impl<T: Copy + Debug> Drop for DLL<T> {
+impl<T> Drop for DLL<T> {
     fn drop(&mut self) {
         let mut node = self.head;
         while let Some(n) = node {
@@ -23,7 +22,7 @@ impl<T: Copy + Debug> Drop for DLL<T> {
     }
 }
 
-impl<T: Copy + Debug> DLL<T> {
+impl<T> DLL<T> {
     fn new() -> Self {
         Self { len: 0, head: None, tail: None }
     }
@@ -49,21 +48,18 @@ impl<T: Copy + Debug> DLL<T> {
     fn pop(&mut self) -> Option<T> {
         match self.tail {
             None => None,
-            Some(tail) if self.len == 1 => {
-                self.len = 0;
-                self.tail = None;
-                self.head = None;
-                let value = unsafe { tail.as_ref() }.value;
-                _ = unsafe { Box::from_raw(tail.as_ptr()) };
-                Some(value)
-            }
             Some(tail) => {
+                let tail = unsafe { Box::from_raw(tail.as_ptr()) };
                 self.len -= 1;
-                let value = unsafe { tail.as_ref() }.value;
-                self.tail = unsafe { tail.as_ref() }.prev;
-                unsafe { (*self.tail.unwrap().as_ptr()).next = None };
-                _ = unsafe { Box::from_raw(tail.as_ptr()) };
-                Some(value)
+
+                if self.len == 0 {
+                    self.head = None;
+                } else {
+                    tail.prev.map(|p| unsafe { (*p.as_ptr()).next = None });
+                }
+                self.tail = tail.prev;
+
+                Some(tail.value)
             }
         }
     }
@@ -77,7 +73,7 @@ mod tests {
     #[test]
     fn it_works() {
         let mut dll = DLL::new();
-        for n in 0..10000 {
+        for n in 0..20_000 {
             for i in 0..n {
                 dll.push(i);
             }
