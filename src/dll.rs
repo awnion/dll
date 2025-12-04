@@ -13,6 +13,16 @@ pub struct DLL<T: Copy + Debug> {
     tail: Option<NonNull<Node<T>>>,
 }
 
+impl<T: Copy + Debug> Drop for DLL<T> {
+    fn drop(&mut self) {
+        let mut node = self.head;
+        while let Some(n) = node {
+            node = unsafe { (*n.as_ptr()).next };
+            _ = unsafe { Box::from_raw(n.as_ptr()) };
+        }
+    }
+}
+
 impl<T: Copy + Debug> DLL<T> {
     fn new() -> Self {
         Self { len: 0, head: None, tail: None }
@@ -28,9 +38,6 @@ impl<T: Copy + Debug> DLL<T> {
                 self.tail = Some(node_ptr);
             }
             Some(tail) => {
-                eprintln!("push tail: {:?}", tail);
-                eprintln!("push self len {}", self.len);
-
                 let node = Box::new(Node { next: None, prev: Some(tail), value });
                 let node_ptr = unsafe { NonNull::new_unchecked(Box::into_raw(node)) };
                 unsafe { (*tail.as_ptr()).next = Some(node_ptr) };
@@ -47,19 +54,15 @@ impl<T: Copy + Debug> DLL<T> {
                 self.tail = None;
                 self.head = None;
                 let value = unsafe { tail.as_ref() }.value;
-                unsafe { tail.drop_in_place() };
+                _ = unsafe { Box::from_raw(tail.as_ptr()) };
                 Some(value)
             }
             Some(tail) => {
                 self.len -= 1;
-                eprintln!("tail: {:?}", tail);
-                eprintln!("self len {}", self.len);
-                let value = unsafe { tail.as_ref() }.value.clone();
-                dbg!(value);
-                self.tail = unsafe { tail.as_ref() }.prev.clone();
-                self.tail.map(|tail| unsafe { (*tail.as_ptr()).next = None });
-                // unsafe { (*(*tail.as_ptr()).prev.unwrap().as_ptr()).next = None };
-                unsafe { tail.drop_in_place() };
+                let value = unsafe { tail.as_ref() }.value;
+                self.tail = unsafe { tail.as_ref() }.prev;
+                unsafe { (*self.tail.unwrap().as_ptr()).next = None };
+                _ = unsafe { Box::from_raw(tail.as_ptr()) };
                 Some(value)
             }
         }
@@ -70,17 +73,43 @@ impl<T: Copy + Debug> DLL<T> {
 mod tests {
     use crate::dll::DLL;
 
+    #[cfg(not(miri))]
     #[test]
     fn it_works() {
         let mut dll = DLL::new();
-        let n = 1000;
+        for n in 0..10000 {
+            for i in 0..n {
+                dll.push(i);
+            }
+            assert_eq!(dll.len, n);
+            for i in 0..n {
+                assert_eq!(dll.pop(), Some(n - i - 1));
+            }
+            assert_eq!(dll.pop(), None);
+        }
+    }
+
+    #[test]
+    fn miri() {
+        let mut dll = DLL::new();
+        for n in 0..10 {
+            for i in 0..n {
+                dll.push(i);
+            }
+            assert_eq!(dll.len, n);
+            for i in 0..n {
+                assert_eq!(dll.pop(), Some(n - i - 1));
+            }
+            assert_eq!(dll.pop(), None);
+        }
+
+        let n = 10;
         for i in 0..n {
             dll.push(i);
         }
         assert_eq!(dll.len, n);
-        for i in 0..n {
+        for i in 0..n - 2 {
             assert_eq!(dll.pop(), Some(n - i - 1));
         }
-        assert_eq!(dll.pop(), None);
     }
 }
