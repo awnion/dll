@@ -20,12 +20,7 @@ pub struct DLL<T> {
 
 impl<T> Drop for DLL<T> {
     fn drop(&mut self) {
-        let mut node = self.first;
-        while !node.is_null() {
-            let next = unsafe { (*node).next };
-            drop(unsafe { Box::from_raw(node) });
-            node = next;
-        }
+        while let Some(_) = self.pop() {}
     }
 }
 pub unsafe fn raw_into_box<T>(r: *mut T) -> Box<T> {

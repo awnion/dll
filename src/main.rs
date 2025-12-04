@@ -7,10 +7,10 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::LinkedList;
-
+    #[cfg(not(miri))]
     #[test]
     fn it_works() {
+        use std::collections::LinkedList;
         let mut dll = LinkedList::new();
         for n in 0..20_000 {
             for i in 0..n {
