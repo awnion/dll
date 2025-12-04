@@ -6,6 +6,7 @@ pub struct Node<T> {
     value: T,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub struct DLL<T> {
     len: usize,
     head: Option<NonNull<Node<T>>>,
@@ -55,7 +56,10 @@ impl<T> DLL<T> {
                 if self.len == 0 {
                     self.head = None;
                 } else {
-                    tail.prev.map(|p| unsafe { (*p.as_ptr()).next = None });
+                    let pre_last = tail.prev.expect("tail prev should always exist here");
+                    unsafe {
+                        (*pre_last.as_ptr()).next = None;
+                    }
                 }
                 self.tail = tail.prev;
 

@@ -1,5 +1,6 @@
-use std::{mem, ptr};
 use std::marker::PhantomData;
+use std::mem;
+use std::ptr;
 
 pub struct Node<T> {
     next: NodePtr<T>,
@@ -9,10 +10,11 @@ pub struct Node<T> {
 
 pub type NodePtr<T> = *mut Node<T>;
 
+#[allow(clippy::upper_case_acronyms)]
 pub struct DLL<T> {
     len: usize,
     first: NodePtr<T>,
-    last:  NodePtr<T>,
+    last: NodePtr<T>,
     _marker: PhantomData<T>,
 }
 
@@ -21,12 +23,11 @@ impl<T> Drop for DLL<T> {
         let mut node = self.first;
         while !node.is_null() {
             let next = unsafe { (*node).next };
-            _ = unsafe { Box::from_raw(node) };
+            drop(unsafe { Box::from_raw(node) });
             node = next;
         }
     }
 }
-
 pub unsafe fn raw_into_box<T>(r: *mut T) -> Box<T> {
     unsafe { mem::transmute(r) }
 }
@@ -36,7 +37,6 @@ pub unsafe fn box_into_raw<T>(b: Box<T>) -> *mut T {
 }
 
 impl<T> DLL<T> {
-
     pub fn new() -> Self {
         DLL { len: 0, first: ptr::null_mut(), last: ptr::null_mut(), _marker: PhantomData }
     }
@@ -44,7 +44,7 @@ impl<T> DLL<T> {
     pub fn push(&mut self, t: T) {
         self.len += 1;
 
-        let new = Box::new( Node { data: t, next: ptr::null_mut(), prev: self.last } );
+        let new = Box::new(Node { data: t, next: ptr::null_mut(), prev: self.last });
         let new = unsafe { box_into_raw(new) };
 
         if self.last.is_null() {
@@ -52,13 +52,17 @@ impl<T> DLL<T> {
             self.first = new;
         } else {
             // debug_assert!(!self.first.is_null());
-            unsafe { (*self.last).next = new; }
+            unsafe {
+                (*self.last).next = new;
+            }
         }
         self.last = new;
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        if self.last.is_null() { return None; }
+        if self.last.is_null() {
+            return None;
+        }
         self.len -= 1;
         if self.len == 0 {
             self.first = ptr::null_mut();
@@ -73,6 +77,7 @@ impl<T> DLL<T> {
 mod tests {
     use super::*;
 
+    #[cfg(not(miri))]
     #[test]
     fn it_works() {
         let mut dll = DLL::new();
@@ -85,6 +90,30 @@ mod tests {
                 assert_eq!(dll.pop(), Some(n - i - 1));
             }
             assert_eq!(dll.pop(), None);
+        }
+    }
+
+    #[test]
+    fn miri() {
+        let mut dll = DLL::new();
+        for n in 0..10 {
+            for i in 0..n {
+                dll.push(i);
+            }
+            assert_eq!(dll.len, n);
+            for i in 0..n {
+                assert_eq!(dll.pop(), Some(n - i - 1));
+            }
+            assert_eq!(dll.pop(), None);
+        }
+
+        let n = 10;
+        for i in 0..n {
+            dll.push(i);
+        }
+        assert_eq!(dll.len, n);
+        for i in 0..n - 2 {
+            assert_eq!(dll.pop(), Some(n - i - 1));
         }
     }
 }
