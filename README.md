@@ -147,3 +147,25 @@ Found 3 outliers among 100 measurements (3.00%)
   2 (2.00%) high mild
   1 (1.00%) high severe
 ```
+
+The tables below summarize the median time per operation size extracted from the benchmark output above.
+
+### Push only (push N elements)
+
+| N     | std::LinkedList | raw_pointer_linked_list |
+|-------|-----------------|-------------------------|
+| 1     | 17.693 ns       | 17.551 ns               |
+| 100   | 1.6573 µs       | 1.6591 µs               |
+| 200   | 3.3028 µs       | 3.2896 µs               |
+| 500   | 8.2134 µs       | 8.2001 µs               |
+| 1,000 | 17.632 µs       | 17.657 µs               |
+
+### Push then pop all (push N, then pop all)
+
+| N     | std::LinkedList | raw_pointer_linked_list |
+|-------|-----------------|-------------------------|
+| 1     | 17.412 ns       | 17.403 ns               |
+| 100   | 1.6494 µs       | 1.6458 µs               |
+| 200   | 3.2882 µs       | 3.3226 µs               |
+| 500   | 8.1791 µs       | 8.2082 µs               |
+| 1,000 | 17.674 µs       | 17.491 µs               |
