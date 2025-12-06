@@ -24,11 +24,11 @@ impl<T> Drop for DLL<T> {
 }
 
 impl<T> DLL<T> {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self { len: 0, head: None, tail: None }
     }
 
-    fn push(&mut self, value: T) {
+    pub fn push(&mut self, value: T) {
         self.len += 1;
         match self.tail {
             None => {
@@ -46,7 +46,7 @@ impl<T> DLL<T> {
         }
     }
 
-    fn pop(&mut self) -> Option<T> {
+    pub fn pop(&mut self) -> Option<T> {
         match self.tail {
             None => None,
             Some(tail) => {
@@ -66,6 +66,10 @@ impl<T> DLL<T> {
                 Some(tail.value)
             }
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.len
     }
 }
 
